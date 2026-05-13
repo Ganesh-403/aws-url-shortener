@@ -10,9 +10,7 @@ This project demonstrates modern cloud-native backend architecture using a scala
 
 ### Frontend
 
-```text
 https://d3461bhuac6sr6.cloudfront.net/
-```
 
 ### API Endpoint
 
