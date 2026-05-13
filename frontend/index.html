@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS URL Shortener</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;600;700&display=swap');
+
+        :root {
+            --bg-1: #120304;
+            --bg-2: #2a0609;
+            --bg-3: #5f0f15;
+            --glass: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --text: #fff4f4;
+            --muted: #ffd7d7;
+            --accent: #ff2d3e;
+            --accent-2: #ff6a4d;
+            --ok: #b7ffcf;
+            --danger: #ffd3d3;
+            --shadow: 0 25px 80px rgba(0, 0, 0, 0.45);
+            --radius: 24px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            color: var(--text);
+            font-family: 'Manrope', sans-serif;
+            overflow-x: hidden;
+        }
+
+        body {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background:
+                radial-gradient(1200px 600px at 10% 10%, rgba(255, 110, 110, 0.2), transparent 50%),
+                radial-gradient(900px 500px at 90% 0%, rgba(255, 58, 58, 0.23), transparent 50%),
+                linear-gradient(135deg, var(--bg-1), var(--bg-2) 40%, var(--bg-3));
+            position: relative;
+            padding: 24px;
+        }
+
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(18px);
+            z-index: 0;
+            pointer-events: none;
+            animation: drift 12s ease-in-out infinite alternate;
+        }
+
+        body::before {
+            width: 280px;
+            height: 280px;
+            left: -80px;
+            top: -40px;
+            background: radial-gradient(circle, rgba(255, 82, 82, 0.7), rgba(255, 82, 82, 0));
+        }
+
+        body::after {
+            width: 360px;
+            height: 360px;
+            right: -120px;
+            bottom: -70px;
+            background: radial-gradient(circle, rgba(255, 140, 66, 0.55), rgba(255, 140, 66, 0));
+            animation-delay: 1.8s;
+        }
+
+        .wrap {
+            position: relative;
+            z-index: 1;
+            width: min(760px, 100%);
+        }
+
+        .glass {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 34px;
+            animation: rise 800ms ease both;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            box-shadow: 0 0 0 6px rgba(255, 45, 62, 0.15);
+        }
+
+        h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(2.2rem, 6vw, 4.3rem);
+            line-height: 0.95;
+            margin: 0;
+            letter-spacing: 0.03em;
+            text-wrap: balance;
+        }
+
+        .subtitle {
+            margin: 12px 0 26px;
+            color: var(--muted);
+            font-size: 1rem;
+            max-width: 56ch;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .input-row input {
+            flex: 1 1 360px;
+            min-width: 0;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            color: #fff;
+            border-radius: 14px;
+            padding: 14px 16px;
+            font-size: 0.98rem;
+            outline: none;
+            transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+        }
+
+        .input-row input::placeholder {
+            color: rgba(255, 240, 240, 0.75);
+        }
+
+        .input-row input:focus {
+            border-color: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 0 5px rgba(255, 81, 81, 0.18);
+            transform: translateY(-1px);
+        }
+
+        .input-row button {
+            border: 0;
+            padding: 14px 22px;
+            border-radius: 14px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            background: linear-gradient(130deg, var(--accent), var(--accent-2));
+            box-shadow: 0 12px 24px rgba(255, 58, 58, 0.35);
+            transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+        }
+
+        .input-row button:hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 18px 30px rgba(255, 73, 73, 0.4);
+            filter: saturate(1.08);
+        }
+
+        .input-row button:active {
+            transform: translateY(0) scale(0.99);
+        }
+
+        .result {
+            margin-top: 18px;
+            min-height: 1.7em;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #ffe6e6;
+            word-break: break-word;
+        }
+
+        .result a {
+            color: #fff;
+            font-weight: 700;
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.7);
+        }
+
+        .result a:hover {
+            border-bottom-style: solid;
+        }
+
+        .ok {
+            color: var(--ok);
+        }
+
+        .error {
+            color: var(--danger);
+        }
+
+        @keyframes rise {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes drift {
+            from {
+                transform: translate3d(-8px, 6px, 0) scale(0.98);
+            }
+            to {
+                transform: translate3d(8px, -6px, 0) scale(1.02);
+            }
+        }
+
+        @media (max-width: 680px) {
+            .glass {
+                padding: 24px;
+                border-radius: 20px;
+            }
+
+            .input-row {
+                gap: 10px;
+            }
+
+            .input-row button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="wrap">
+        <section class="glass">
+            <span class="eyebrow"><span class="dot"></span>aws serverless utility</span>
+            <h1>Shorten Long Links<br>With One Tap</h1>
+            <p class="subtitle">
+                Paste a URL below and generate a compact link instantly. Fast, simple, and designed with a high-energy red glass finish.
+            </p>
+
+            <div class="input-row">
+                <input type="text" id="url" placeholder="https://example.com/very/long/link">
+                <button id="shortenBtn" type="button">Generate Link</button>
+            </div>
+
+            <p id="result" class="result">Your shortened URL will appear here.</p>
+        </section>
+    </main>
+
+    <script>
+        const btn = document.getElementById('shortenBtn');
+        const input = document.getElementById('url');
+        const result = document.getElementById('result');
+
+        btn.addEventListener('click', shorten);
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                shorten();
+            }
+        });
+
+        async function shorten() {
+            const url = input.value.trim();
+
+            if (!url) {
+                result.className = 'result error';
+                result.textContent = 'Please enter a URL first.';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+            result.className = 'result';
+            result.textContent = 'Creating your short link...';
+
+            try {
+                const response = await fetch(
+                    'https://d3ozu89ifj.execute-api.us-east-1.amazonaws.com/shorten',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ url: url })
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Request failed');
+                }
+
+                const data = await response.json();
+                const shortUrl = data.short_url;
+
+                if (!shortUrl) {
+                    throw new Error('Invalid API response');
+                }
+
+                result.className = 'result ok';
+                result.innerHTML = 'Done: <a href="' + shortUrl + '" target="_blank" rel="noopener noreferrer">' + shortUrl + '</a>';
+            } catch (error) {
+                result.className = 'result error';
+                result.textContent = 'Something went wrong while shortening the URL. Please try again.';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Generate Link';
+            }
+        }
+    </script>
+</body>
+</html>
